@@ -1,43 +1,43 @@
 import streamlit as st
 import cv2
-from deepface import DeepFace
 import numpy as np
+from fer.fer import FER   # FIXED IMPORT
 
 st.set_page_config(page_title="Emotion Detection App", layout="wide")
 
-st.title("😊 Face Emotion Detection using Streamlit")
-st.write("Real-time webcam-based emotion recognition")
+st.title("😊 Real-Time Emotion Detection (Render & Local Compatible)")
+st.write("Lightweight FER model used for emotion detection.")
 
-run = st.checkbox('Start Webcam')
-
+run = st.checkbox("Start Webcam")
 FRAME_WINDOW = st.image([])
+
+# FER Detector
+detector = FER()
 
 camera = cv2.VideoCapture(0)
 
 while run:
     ret, frame = camera.read()
     if not ret:
-        st.write("Camera not detected")
+        st.error("Webcam not detected. Try refreshing.")
         break
 
-    # Convert frame to RGB
     rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
 
-    # Analyze emotion
-    try:
-        result = DeepFace.analyze(rgb_frame, actions=['emotion'], enforce_detection=False)
-        emotion = result[0]['dominant_emotion']
+    result = detector.detect_emotions(rgb_frame)
 
-        # Put emotion text
-        cv2.putText(rgb_frame, f'Emotion: {emotion}', (30, 30),
+    if result:
+        emotions = result[0]["emotions"]
+        emotion = max(emotions, key=emotions.get)
+
+        cv2.putText(rgb_frame, f"Emotion: {emotion}", (10, 30),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-
-    except:
-        cv2.putText(rgb_frame, "No face detected", (30, 30),
+    else:
+        cv2.putText(rgb_frame, "No face detected", (10, 30),
                     cv2.FONT_HERSHEY_SIMPLEX, 1, (255, 0, 0), 2)
 
     FRAME_WINDOW.image(rgb_frame)
 
 else:
-    st.write("Webcam stopped")
     camera.release()
+    st.write("Webcam stopped.")
